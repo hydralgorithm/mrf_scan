@@ -1,0 +1,13 @@
+{
+  "classes": [
+    "NORMAL",
+    "BACTERIAL_PNEUMONIA",
+    "VIRAL_PNEUMONIA"
+  ],
+  "img_size": [
+    224,
+    224
+  ],
+  "model": "ResNet50",
+  "note": "Baseline: ResNet backbone frozen; head trained."
+}
