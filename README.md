@@ -265,10 +265,10 @@ Interactive API documentation (Swagger UI)
 ## 🧪 Model Performance
 
 ### Metrics
-- **Overall Accuracy**: 82.5%
-- **Precision**: 81.3%
-- **Recall**: 83.1%
-- **F1-Score**: 82.2%
+- **Overall Accuracy**: 73.4%
+- **Precision**: 71.8%
+- **Recall**: 78.2%
+- **F1-Score**: 74.9%
 - **Parameters**: 3,538,051 (lightweight and efficient)
 
 ### Classification Performance
