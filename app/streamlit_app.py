@@ -15,11 +15,7 @@ from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from src.data.loader import CLASS_NAMES, IMG_SIZE
 from src.inference.severity import compute_severity_1_to_10
 
-# Try local path first, fallback to Hugging Face deployment path
-if os.path.exists("models/final/best_model.keras"):
-    MODEL_PATH = "models/final/best_model.keras"  # Local
-else:
-    MODEL_PATH = "best_model.keras"  # Hugging Face
+MODEL_PATH = "models/final/best_model.keras"
 DEFAULT_PNEUMONIA_MIN_CONFIDENCE = 0.65
 
 def smart_threshold(probs):
