@@ -28,8 +28,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load model globally
-MODEL_PATH = "models/final/best_model.keras"
+# Load model globally - support both local and deployment paths
+if os.path.exists("models/final/best_model.keras"):
+    MODEL_PATH = "models/final/best_model.keras"  # Local development
+else:
+    MODEL_PATH = "best_model.keras"  # Production deployment
 model = None
 
 
