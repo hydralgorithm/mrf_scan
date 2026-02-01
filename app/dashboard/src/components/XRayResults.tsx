@@ -54,46 +54,6 @@ export default function XRayResults({ prediction }: XRayResultsProps) {
               </span>
             </div>
           </div>
-
-          {/* Probability breakdown */}
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            {prediction.probabilities && Object.entries(prediction.probabilities).map(([key, value]) => (
-              <div
-                key={key}
-                className={`p-2 rounded ${
-                  key === prediction.classification
-                    ? 'bg-medical-blue-light dark:bg-blue-900/30 border-2 border-medical-blue'
-                    : 'bg-gray-50 dark:bg-gray-800/50'
-                }`}
-              >
-                <p className="font-semibold text-gray-700 dark:text-gray-300">
-                  {key.replace('_', ' ')}
-                </p>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {(value * 100).toFixed(1)}%
-                </p>
-              </div>
-            ))}
-            {prediction.adjusted_probabilities && !prediction.probabilities && (
-              Object.entries(prediction.adjusted_probabilities).map(([key, value]) => (
-                <div
-                  key={key}
-                  className={`p-2 rounded ${
-                    key === prediction.classification
-                      ? 'bg-medical-blue-light dark:bg-blue-900/30 border-2 border-medical-blue'
-                      : 'bg-gray-50 dark:bg-gray-800/50'
-                  }`}
-                >
-                  <p className="font-semibold text-gray-700 dark:text-gray-300">
-                    {key.replace('_', ' ')}
-                  </p>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {(value * 100).toFixed(1)}%
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
         </div>
       </div>
     </div>
