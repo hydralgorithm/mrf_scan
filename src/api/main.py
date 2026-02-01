@@ -30,34 +30,7 @@ app.add_middleware(
 
 # Load model globally
 MODEL_PATH = "models/final/best_model.keras"
-PNEUMONIA_MIN_CONFIDENCE = float(os.getenv("PNEUMONIA_MIN_CONFIDENCE", "0.65"))
 model = None
-
-
-def smart_threshold(probs):
-    """
-    Reduce false VIRAL positives by adjusting probability distribution
-    This fixes the 82.7% NORMAL→VIRAL misclassification problem
-    """
-    probs = np.array(probs, dtype=np.float32)
-    
-    # Reduce VIRAL bias (main problem)
-    probs[2] *= 0.75
-    
-    # Boost NORMAL if it's competitive
-    if probs[0] > 0.20:
-        probs[0] *= 1.3
-    
-    # Re-normalize
-    probs = probs / np.sum(probs)
-    
-    # Apply strict threshold for VIRAL
-    pred_idx = int(np.argmax(probs))
-    if pred_idx == 2 and probs[2] < 0.70:
-        # Re-rank between NORMAL and BACTERIAL
-        pred_idx = 0 if probs[0] > probs[1] else 1
-    
-    return pred_idx, probs
 
 
 @app.on_event("startup")
@@ -117,41 +90,24 @@ async def predict_image(file: UploadFile = File(...)):
 
         probs = model.predict(x, verbose=0)[0]
         
-        # Apply smart thresholding to reduce false VIRAL positives
-        pred_idx, adjusted_probs = smart_threshold(probs)
+        # Get prediction from raw probabilities
+        pred_idx = int(np.argmax(probs))
         pred_label = CLASS_NAMES[pred_idx]
-        confidence = float(adjusted_probs[pred_idx])
+        confidence = float(probs[pred_idx])
 
-        # Legacy thresholding (now applied on adjusted probs)
-        thresholded = False
-        if pred_label in {"BACTERIAL_PNEUMONIA", "VIRAL_PNEUMONIA"}:
-            if confidence < PNEUMONIA_MIN_CONFIDENCE:
-                pred_idx = 0
-                pred_label = CLASS_NAMES[pred_idx]
-                confidence = float(adjusted_probs[pred_idx])
-                thresholded = True
+        base_severity = compute_severity_1_to_10(probs, pred_idx)
 
-        base_severity = compute_severity_1_to_10(adjusted_probs, pred_idx)
-
-        # Return both raw and adjusted probabilities
+        # Return probabilities
         probabilities = {
             CLASS_NAMES[i]: float(probs[i]) for i in range(len(CLASS_NAMES))
-        }
-        
-        adjusted_probabilities = {
-            CLASS_NAMES[i]: float(adjusted_probs[i]) for i in range(len(CLASS_NAMES))
         }
 
         return JSONResponse({
             "classification": pred_label,
             "confidence": confidence,
-            "raw_probabilities": probabilities,
-            "adjusted_probabilities": adjusted_probabilities,
+            "probabilities": probabilities,
             "base_severity": base_severity,
-            "class_index": pred_idx,
-            "thresholded": thresholded,
-            "smart_thresholding_applied": True,
-            "pneumonia_min_confidence": PNEUMONIA_MIN_CONFIDENCE
+            "class_index": pred_idx
         })
 
     except Exception as e:
