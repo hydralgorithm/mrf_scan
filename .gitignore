@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Model files (keep structure, ignore large files)
+models/checkpoints/
+*.h5
+*.pb
+*.tflite
+
+# Data (keep structure, ignore actual data)
+data/raw/**/*.jpg
+data/raw/**/*.jpeg
+data/raw/**/*.png
+data/splits/
+
+# Outputs
+outputs/
+*.png
+*.jpg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Frontend
+app/dashboard/node_modules/
+app/dashboard/dist/
+app/dashboard/build/
+app/dashboard/.env
+app/dashboard/.env.local
+app/dashboard/*.log
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+logs/

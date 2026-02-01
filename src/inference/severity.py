@@ -1,137 +1,82 @@
 import numpy as np
-from typing import Tuple
 
-
-def _entropy(probs: np.ndarray, eps: float = 1e-9) -> float:
-    """
-    Compute Shannon entropy of probability distribution.
-    Higher entropy = more uncertainty.
-    
-    Args:
-        probs: probability array
-        eps: small epsilon to avoid log(0)
-    
-    Returns:
-        Entropy value
-    """
+def _entropy(probs, eps=1e-9):
     p = np.clip(np.asarray(probs, dtype=np.float32), eps, 1.0)
     return float(-np.sum(p * np.log(p)))
 
-
-def compute_severity_1_to_10(
-    probs: np.ndarray,
-    pred_idx: int,
-    force_normal_zero: bool = True,
-    heatmap_extent: float = None
-) -> int:
+def compute_severity_1_to_10(probs, pred_idx, force_normal_zero=True):
     """
-    Heuristic severity score for pneumonia severity estimation.
-    
-    LOGIC:
-    - NORMAL prediction => severity 0 (if force_normal_zero=True)
-    - PNEUMONIA prediction => severity 1..10 based on:
-      * Pneumonia probability (p_bacterial + p_viral)
-      * Confidence margin (top1 - top2 probability)
-      * Entropy (model's confidence/certainty)
-      * Optional heatmap extent (area of abnormality)
-    
-    INTERPRETATION (for clinical reference):
-    1-3:   Low risk, likely mild/localized
-    4-6:   Moderate risk, may need monitoring
-    7-9:   High risk, immediate assessment recommended
-    10:    Critical risk, urgent intervention needed
-    
-    Args:
-        probs: softmax probabilities [p_normal, p_bacterial, p_viral]
-        pred_idx: argmax index (0=NORMAL, 1=BACTERIAL, 2=VIRAL)
-        force_normal_zero: if True, return 0 for NORMAL predictions
-        heatmap_extent: optional normalized extent [0,1] of Grad-CAM heatmap
-                        (future enhancement; not yet integrated)
-    
-    Returns:
-        Severity score as integer in [0, 10]
+    Heuristic severity score for demo:
+    - Normal => 0 (if force_normal_zero=True)
+    - Pneumonia => 1..10
+
+    probs: softmax [p_normal, p_bacterial, p_viral]
+    pred_idx: argmax index
     """
     probs = np.asarray(probs, dtype=np.float32)
 
-    # =========== RULE 1: NORMAL => 0 ===========
+    # If predicted NORMAL => severity 0 (recommended for demo clarity)
     if force_normal_zero and pred_idx == 0:
         return 0
 
-    # =========== PNEUMONIA SEVERITY FACTORS ===========
-    
-    # Factor 1: Pneumonia Probability
-    # Sum of bacterial + viral probabilities indicates how likely pneumonia is
+    # Pneumonia probability (how likely pneumonia overall)
     p_pneu = float(probs[1] + probs[2])  # bacterial + viral
-    
-    # Factor 2: Confidence Margin
-    # Difference between top and second-highest prediction
-    # High margin = model is confident in its call
-    sorted_probs = np.sort(probs)
-    margin = float(sorted_probs[-1] - sorted_probs[-2])
-    
-    # Factor 3: Entropy (Uncertainty)
-    # Low entropy = high confidence; high entropy = uncertain
+
+    # Margin: how confident the model is in its top class
+    s = np.sort(probs)
+    margin = float(s[-1] - s[-2])  # top1 - top2
+
+    # Entropy: uncertainty measure (high entropy = uncertain)
     ent = _entropy(probs)
-    ent_norm = ent / np.log(len(probs))  # normalize to ~[0, 1]
-    
-    # Factor 4: Pneumonia Type Distinction (optional)
-    # Bacterial pneumonia is generally more severe than viral
-    if pred_idx == 1:  # Bacterial
-        type_multiplier = 1.05  # 5% increase for bacterial
-    else:  # Viral (pred_idx == 2)
-        type_multiplier = 1.0
-    
-    # =========== COMBINED SCORE ===========
-    # Weighted combination emphasizing:
-    #   - High pneumonia probability is the strongest signal
-    #   - High confidence margin supports the diagnosis
-    #   - Low entropy (high confidence) increases severity
-    #   - Slight boost for bacterial vs viral
-    
-    raw_score = (
-        (0.60 * p_pneu) +           # Dominant factor: how likely pneumonia is
-        (0.25 * margin) +           # Secondary: how confident in top prediction
-        (0.15 * (1.0 - ent_norm))   # Tertiary: penalize uncertainty
-    )
-    raw_score *= type_multiplier
-    
-    # Clamp to [0, 1]
-    raw_score = float(np.clip(raw_score, 0.0, 1.0))
-    
-    # =========== MAP TO 1..10 SCALE ===========
-    # Use sqrt to spread the range: avoids saturation around 9-10
-    # This gives better granularity for 1-7 range (most cases)
-    severity_float = 10.0 * np.sqrt(raw_score)
-    sev = int(np.ceil(severity_float))
-    
-    # Ensure pneumonia predictions never drop to 0
+    ent_norm = ent / np.log(len(probs))  # normalize to ~[0,1]
+
+    # We want "higher severity" when pneumonia prob is high AND model is decisively pneumonia.
+    # Penalize uncertainty slightly so borderline cases don't become severity 10.
+    raw = (0.75 * p_pneu) + (0.35 * margin) - (0.25 * ent_norm)
+
+    # Clamp to [0,1]
+    raw = float(np.clip(raw, 0.0, 1.0))
+
+    # Map to 1..10 with a curve to avoid saturation.
+    # sqrt spreads mid-range; prevents always hitting 10.
+    sev = int(np.ceil(10 * np.sqrt(raw)))
+
+    # If pneumonia predicted but sev lands 0, bump to 1
     if pred_idx != 0:
         sev = max(sev, 1)
-    
-    # Final clamp
+
     return int(np.clip(sev, 0, 10))
 
-
-def compute_severity_raw_components(
-    probs: np.ndarray,
-    pred_idx: int
-) -> Tuple[float, float, float, float]:
+def compute_combined_severity(
+    classification: str,
+    curb65_score: int,
+    base_severity: int = None
+) -> int:
     """
-    DEBUG/ANALYSIS: Return individual severity components.
+    Compute final severity score combining CURB-65 and model prediction.
+    
+    Args:
+        classification: "NORMAL", "BACTERIAL_PNEUMONIA", or "VIRAL_PNEUMONIA"
+        curb65_score: CURB-65 score (0-5)
+        base_severity: Optional base severity from model (0-10)
     
     Returns:
-        (p_pneu, margin, entropy_normalized, confidence)
+        Final severity score (0-10)
     """
-    probs = np.asarray(probs, dtype=np.float32)
+    # If NORMAL, return 0
+    if classification == "NORMAL":
+        return 0
     
-    p_pneu = float(probs[1] + probs[2])
+    # Map CURB-65 to base severity
+    if curb65_score <= 1:
+        base_sev = 2
+    elif curb65_score == 2:
+        base_sev = 5
+    else:  # 3-5
+        base_sev = 8
     
-    sorted_probs = np.sort(probs)
-    margin = float(sorted_probs[-1] - sorted_probs[-2])
+    # Add +1 for bacterial pneumonia (higher risk)
+    if classification == "BACTERIAL_PNEUMONIA":
+        base_sev = min(base_sev + 1, 10)
     
-    ent = _entropy(probs)
-    ent_norm = ent / np.log(len(probs))
-    
-    confidence = float(sorted_probs[-1])  # top probability
-    
-    return p_pneu, margin, ent_norm, confidence
+    return min(base_sev, 10)

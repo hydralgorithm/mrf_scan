@@ -11,16 +11,39 @@ import numpy as np
 import cv2
 import os
 
-from tensorflow.keras.applications.resnet import preprocess_input
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from src.data.loader import CLASS_NAMES, IMG_SIZE
-from src.inference.severity import compute_severity_1_to_10, compute_severity_raw_components
+from src.inference.severity import compute_severity_1_to_10
 
-MODEL_PATH = "models/final/best_baseline.keras"
+MODEL_PATH = "models/final/best_model.keras"
+DEFAULT_PNEUMONIA_MIN_CONFIDENCE = 0.65
+
+def smart_threshold(probs):
+    """
+    Reduce false VIRAL positives by adjusting probability distribution
+    """
+    probs = np.array(probs, dtype=np.float32)
+    probs[2] *= 0.75  # Reduce VIRAL bias
+    if probs[0] > 0.20:
+        probs[0] *= 1.3  # Boost NORMAL
+    probs = probs / np.sum(probs)
+    pred_idx = int(np.argmax(probs))
+    if pred_idx == 2 and probs[2] < 0.70:
+        pred_idx = 0 if probs[0] > probs[1] else 1
+    return pred_idx, probs
 
 st.set_page_config(page_title="Pneumonia Classifier", layout="centered")
 
 st.title("🩻 Pneumonia Classification Demo")
 st.write("Upload a Chest X-ray image for analysis.")
+
+pneumonia_min_conf = st.slider(
+    "Pneumonia minimum confidence (reduce false positives)",
+    min_value=0.50,
+    max_value=0.95,
+    value=DEFAULT_PNEUMONIA_MIN_CONFIDENCE,
+    step=0.01
+)
 
 # Load model once
 @st.cache_resource
@@ -50,49 +73,39 @@ if uploaded:
 
     # Predict
     probs = model.predict(x, verbose=0)[0]
-    pred_idx = int(np.argmax(probs))
+    
+    # Apply smart thresholding
+    pred_idx, adjusted_probs = smart_threshold(probs)
     pred_label = CLASS_NAMES[pred_idx]
 
+    # Legacy confidence thresholding
+    thresholded = False
+    if pred_label in {"BACTERIAL_PNEUMONIA", "VIRAL_PNEUMONIA"}:
+        if float(adjusted_probs[pred_idx]) < pneumonia_min_conf:
+            pred_idx = 0
+            pred_label = CLASS_NAMES[pred_idx]
+            thresholded = True
+
     st.subheader("🔍 Prediction")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.write(f"**Class: {pred_label}**")
-    with col2:
-        st.write(f"**Confidence: {probs[pred_idx]:.1%}**")
+    st.write(f"**{pred_label}**")
+    if thresholded:
+        st.caption("Low-confidence pneumonia prediction; defaulted to NORMAL.")
+    
+    # Show probability comparison
+    with st.expander("📊 Show Probability Details"):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("**Raw Model Output:**")
+            for i, cls in enumerate(CLASS_NAMES):
+                st.write(f"{cls}: {probs[i]:.2%}")
+        with col2:
+            st.write("**After Smart Thresholding:**")
+            for i, cls in enumerate(CLASS_NAMES):
+                st.write(f"{cls}: {adjusted_probs[i]:.2%}")
 
     # Severity
-    severity = compute_severity_1_to_10(probs, pred_idx)
+    severity = compute_severity_1_to_10(adjusted_probs, pred_idx)
     st.subheader("🔥 Severity Score")
-    
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.progress(severity / 10)
-    with col2:
-        # Color coding
-        if severity == 0:
-            severity_color = "🟢"
-        elif severity <= 3:
-            severity_color = "🟡"
-        elif severity <= 6:
-            severity_color = "🟠"
-        else:
-            severity_color = "🔴"
-        st.write(f"{severity_color} **{severity}/10**")
+    st.write(f"**{severity}/10**")
 
-    # Detailed breakdown
-    if pred_idx != 0:  # Show details only for pneumonia
-        with st.expander("📊 Severity Breakdown"):
-            p_pneu, margin, ent_norm, confidence = compute_severity_raw_components(probs, pred_idx)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Pneumonia Prob", f"{p_pneu:.1%}")
-                st.metric("Confidence Margin", f"{margin:.3f}")
-            with col2:
-                st.metric("Model Certainty", f"{(1.0 - ent_norm):.1%}")
-                st.metric("Top Probability", f"{confidence:.1%}")
-
-    # Class probabilities
-    st.subheader("📈 Class Probabilities")
-    prob_dict = {CLASS_NAMES[i]: float(probs[i]) for i in range(len(CLASS_NAMES))}
-    st.bar_chart(prob_dict)
+    st.progress(severity / 10)

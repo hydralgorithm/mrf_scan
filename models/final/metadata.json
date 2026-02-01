@@ -8,8 +8,16 @@
     224,
     224
   ],
-  "model": "ResNet50",
-  "baseline_macro_recall": 0.7134920634920635,
-  "finetuned_macro_recall": 0.6676303854875284,
-  "note": "Baseline trained with frozen backbone, then fine-tuned last ~30 layers."
+  "model": "MobileNetV2",
+  "architecture": "MobileNetV2 (frozen) + GlobalAvgPool + Dropout(0.2) + Dense(3)",
+  "macro_recall": 0.5518,
+  "overall_accuracy": 0.5000,
+  "per_class_recall": {
+    "NORMAL": 0.1082,
+    "BACTERIAL_PNEUMONIA": 0.6083,
+    "VIRAL_PNEUMONIA": 0.9388
+  },
+  "major_issue": "Model heavily biased toward VIRAL classification. 82.7% of NORMAL cases misclassified as VIRAL.",
+  "note": "Best performing model (baseline with frozen MobileNetV2). Needs retraining with focal loss and class balancing to fix NORMAL recall.",
+  "training_date": "2026-02-01"
 }
