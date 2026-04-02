@@ -38,4 +38,7 @@ export interface SeverityResult {
   interpretation: string
   recommendation: string
   riskLevel: 'low' | 'moderate' | 'high'
+  advisoryOnly?: boolean
+  reassuranceOnly?: boolean
+  advisoryTitle?: string
 }

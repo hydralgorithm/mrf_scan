@@ -1,57 +1,87 @@
 # AI Instructions for Project Setup
 
-This document provides a step-by-step guide for an AI to set up and run the Pneumonia Detection project.
+This document provides the current setup and run instructions for the Pneumonia Severity Assessment project.
 
-## Step 1: Unzip the Dataset
+## Step 1: Prepare Dataset
 
-The project's dataset is stored in `data.zip`. You must unzip this file to create the `data` directory in the project root.
+If `data.zip` is present, extract it into the project root so the resulting structure includes `data/raw/...`.
 
-**Action:**
-Extract `data.zip` into the project's root directory. The final structure should be `data/raw/...`.
+## Step 2: Set Up Backend (Python/FastAPI)
 
-## Step 2: Set Up the Backend
+1. Create a Python virtual environment.
+2. Activate it.
+3. Install dependencies:
 
-The backend is a Python application that requires a virtual environment and dependencies from `requirements.txt`.
+```bash
+pip install -r requirements.txt
+```
 
-**Action:**
-1.  Create a Python virtual environment.
-2.  Activate the virtual environment.
-3.  Install the required packages by running:
-    ```bash
-    pip install -r requirements.txt
-    ```
+## Step 3: Set Up Frontend (React + Vite)
 
-## Step 3: Set Up the Frontend
+The frontend app lives in `app/dashboard`.
 
-The frontend is a React application located in the `app/dashboard` directory.
+1. Navigate to the frontend folder.
+2. Install dependencies:
 
-**Action:**
-1.  Navigate to the `app/dashboard` directory.
-2.  Install the Node.js dependencies by running:
-    ```bash
-    npm install
-    ```
+```bash
+cd app/dashboard
+npm install
+```
+
+### Frontend Dependency Notes (already tracked in package.json)
+
+Recent UI/interaction work uses:
+
+- GSAP (`gsap`)
+- Shadcn ecosystem (`shadcn`, `radix-ui`, `class-variance-authority`, `clsx`, `tailwind-merge`, `tw-animate-css`)
+- 3D rendering/effects (`three`, `@react-three/fiber`, `@react-three/postprocessing`, `postprocessing`)
+- charting (`recharts`)
+- typography (`@fontsource-variable/geist`)
+
+No extra manual installs are required beyond `npm install` unless package.json is changed.
 
 ## Step 4: Run the Application
 
-The application consists of a backend API and a frontend client. They must be run in separate terminals.
+Run backend and frontend in separate terminals.
 
 ### Backend
-**Action:**
-1.  Ensure the Python virtual environment is activated.
-2.  From the project's root directory, start the FastAPI server by running:
-    ```bash
-    uvicorn src.api.main:app --reload
-    ```
-3.  The backend will be running at `http://127.0.0.1:8000`.
+
+From project root:
+
+```bash
+uvicorn src.api.main:app --reload
+```
+
+Backend URL: `http://127.0.0.1:8000`
 
 ### Frontend
-**Action:**
-1.  Navigate to the `app/dashboard` directory.
-2.  Start the React development server by running:
-    ```bash
-    npm run dev
-    ```
-3.  The frontend will be accessible at `http://localhost:5173`.
 
-After completing these steps, the application will be fully operational.
+From `app/dashboard`:
+
+```bash
+npm run dev
+```
+
+Frontend URL: `http://localhost:3000`
+
+## Step 5: Build Check (Recommended)
+
+Before merging or handing off, validate production build:
+
+```bash
+cd app/dashboard
+npm run build
+```
+
+## Optional: Regenerate Shadcn/React-Bits Components
+
+Only needed if component source files were removed or intentionally refreshed.
+
+```bash
+cd app/dashboard
+npx shadcn@latest add alert -y
+npx shadcn@latest add @react-bits/BorderGlow-JS-TW -y
+npx shadcn@latest add @react-bits/MagicBento-TS-TW -y
+```
+
+After regeneration, run `npm run build` to verify compatibility.

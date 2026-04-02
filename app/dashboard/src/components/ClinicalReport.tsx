@@ -14,7 +14,7 @@ export default function ClinicalReport({
   curb65Data,
   severityResult,
   curb65Breakdown,
-  imageUrl,
+  imageUrl: _imageUrl,
   onClose
 }: ClinicalReportProps) {
   const handlePrint = () => {
@@ -87,141 +87,202 @@ END OF REPORT
     `.trim()
   }
 
+  const classificationLabel = prediction.classification.replace('_', ' ')
+  const probabilityMap = prediction.probabilities || prediction.adjusted_probabilities || {
+    NORMAL: 0,
+    BACTERIAL_PNEUMONIA: 0,
+    VIRAL_PNEUMONIA: 0
+  }
+
+  const getClassificationTone = () => {
+    if (prediction.classification === 'NORMAL') {
+      return {
+        panel: 'border-emerald-300/45 bg-[linear-gradient(135deg,rgba(8,59,49,0.75),rgba(7,35,29,0.78))]',
+        badge: 'bg-emerald-300/20 text-emerald-100 border border-emerald-200/40',
+        dot: 'bg-emerald-300',
+        icon: '✓'
+      }
+    }
+
+    if (prediction.classification === 'VIRAL_PNEUMONIA') {
+      return {
+        panel: 'border-rose-300/45 bg-[linear-gradient(135deg,rgba(64,11,30,0.76),rgba(33,8,19,0.78))]',
+        badge: 'bg-rose-300/20 text-rose-100 border border-rose-200/40',
+        dot: 'bg-rose-300',
+        icon: '🫁'
+      }
+    }
+
+    return {
+      panel: 'border-sky-300/45 bg-[linear-gradient(135deg,rgba(16,37,64,0.76),rgba(10,23,40,0.78))]',
+      badge: 'bg-sky-300/20 text-sky-100 border border-sky-200/40',
+      dot: 'bg-sky-300',
+      icon: '🫁'
+    }
+  }
+
+  const getRiskTone = () => {
+    if (severityResult.riskLevel === 'high') {
+      return 'text-rose-100 bg-rose-300/20 border border-rose-200/40'
+    }
+    if (severityResult.riskLevel === 'moderate') {
+      return 'text-amber-100 bg-amber-300/20 border border-amber-200/40'
+    }
+    return 'text-emerald-100 bg-emerald-300/20 border border-emerald-200/40'
+  }
+
+  const tone = getClassificationTone()
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto glass-card animate-slide-up">
-        {/* Header */}
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-medical-blue dark:text-blue-400">
-            Clinical Report
-          </h2>
+    <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+      <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-2xl border border-violet-300/25 bg-[linear-gradient(160deg,rgba(17,12,30,0.96),rgba(11,8,21,0.97))] shadow-[0_24px_80px_rgba(0,0,0,0.58)] animate-slide-up">
+        <div className="sticky top-0 z-10 border-b border-violet-300/20 bg-[linear-gradient(180deg,rgba(22,16,39,0.96),rgba(16,12,30,0.94))] px-6 py-5 flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-violet-200/70 mb-1">Clinical Decision Support</p>
+            <h2 className="text-2xl md:text-3xl font-black text-violet-50">Pneumonia Clinical Report</h2>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl"
+            className="h-10 w-10 inline-flex items-center justify-center rounded-full border border-violet-300/30 text-violet-100/90 hover:bg-violet-300/15 transition-colors"
+            aria-label="Close report"
           >
             ×
           </button>
         </div>
 
-        {/* Report Content */}
-        <div className="p-6 space-y-6 print:p-8">
-          {/* Header Section */}
-          <div className="text-center border-b border-gray-200 dark:border-gray-700 pb-4">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              Pneumonia Severity Assessment
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Clinical Decision Support Report
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-              Generated: {new Date().toLocaleString()}
-            </p>
-          </div>
-
-          {/* X-ray Classification */}
-          <section>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
-              X-ray Classification
-            </h3>
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-2">
-              <p>
-                <strong>Classification:</strong>{' '}
-                <span className="text-medical-blue dark:text-blue-400 font-semibold">
-                  {prediction.classification.replace('_', ' ')}
+        <div className="overflow-y-auto max-h-[calc(92vh-138px)] px-6 py-6 space-y-6 print:px-8 print:py-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`rounded-xl border p-5 ${tone.panel}`}>
+              <p className="text-xs uppercase tracking-[0.16em] text-violet-100/75 mb-2">Model Classification</p>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-3xl font-black text-white leading-[1.05] tracking-tight break-words">{classificationLabel}</h3>
+                  <p className="mt-2 text-sm text-violet-100/80">Confidence {(prediction.confidence * 100).toFixed(1)}%</p>
+                </div>
+                <span className={`shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-[0.05em] ${tone.badge}`}>
+                  <span className={`h-2.5 w-2.5 rounded-full ${tone.dot}`} />
+                  {tone.icon} {classificationLabel}
                 </span>
-              </p>
-              <p>
-                <strong>Confidence:</strong> {(prediction.confidence * 100).toFixed(1)}%
-              </p>
-              <div className="mt-3">
-                <p className="text-sm font-semibold mb-2">Probability Breakdown:</p>
-                <div className="grid grid-cols-3 gap-2 text-sm">
-                  {Object.entries(prediction.probabilities || prediction.adjusted_probabilities || {}).map(([key, value]) => (
-                    <div key={key} className="bg-white dark:bg-gray-800 rounded p-2">
-                      <p className="font-semibold">{key.replace('_', ' ')}</p>
-                      <p className="text-gray-600 dark:text-gray-400">{(value * 100).toFixed(1)}%</p>
-                    </div>
-                  ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-violet-300/25 bg-[linear-gradient(135deg,rgba(29,20,50,0.72),rgba(17,12,30,0.76))] p-5">
+              <p className="text-xs uppercase tracking-[0.16em] text-violet-100/75 mb-2">Clinical Summary</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-violet-300/20 bg-black/20 p-3">
+                  <p className="text-[11px] uppercase tracking-[0.1em] text-violet-100/65">CURB-65</p>
+                  <p className="text-2xl font-black text-white">{severityResult.curb65Score}/5</p>
+                </div>
+                <div className="rounded-lg border border-violet-300/20 bg-black/20 p-3">
+                  <p className="text-[11px] uppercase tracking-[0.1em] text-violet-100/65">Severity</p>
+                  <p className="text-2xl font-black text-white">{severityResult.finalSeverity}/10</p>
+                </div>
+                <div className="rounded-lg border border-violet-300/20 bg-black/20 p-3 col-span-2 flex items-center justify-between">
+                  <p className="text-[11px] uppercase tracking-[0.1em] text-violet-100/65">Risk Level</p>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase ${getRiskTone()}`}>
+                    {severityResult.riskLevel}
+                  </span>
                 </div>
               </div>
             </div>
+          </div>
+
+          <section className="rounded-xl border border-violet-300/20 bg-[rgba(18,13,32,0.74)] p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-violet-50">Probability Breakdown</h3>
+              <p className="text-xs text-violet-200/70 uppercase tracking-[0.12em]">Model Distribution</p>
+            </div>
+            <div className="space-y-3">
+              {Object.entries(probabilityMap).map(([key, value]) => (
+                <div key={key} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <p className="font-semibold text-violet-100">{key.replace('_', ' ')}</p>
+                    <p className="text-violet-100/80">{(value * 100).toFixed(1)}%</p>
+                  </div>
+                  <div className="h-2.5 bg-black/35 rounded-full overflow-hidden border border-white/5">
+                    <div
+                      className="h-full bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-300 transition-all duration-700"
+                      style={{ width: `${Math.max(0, Math.min(100, value * 100))}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
 
-          {/* CURB-65 Assessment */}
-          <section>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
-              CURB-65 Risk Assessment
-            </h3>
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-2">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <p><strong>Age:</strong> {curb65Data.age ?? 'Not specified'} years</p>
-                <p><strong>Respiratory Rate:</strong> {curb65Data.respiratoryRate ?? 'Not specified'} breaths/min</p>
-                <p><strong>Blood Pressure:</strong> {curb65Data.systolicBP ?? 'N/A'}/{curb65Data.diastolicBP ?? 'N/A'} mmHg</p>
-                <p><strong>Confusion:</strong> {curb65Data.confusion ? 'Yes' : 'No'}</p>
-                <p><strong>Urea Level:</strong> {curb65Data.urea ?? 'Not specified'} mmol/L</p>
+          <section className="rounded-xl border border-violet-300/20 bg-[rgba(18,13,32,0.74)] p-5">
+            <h3 className="text-lg font-bold text-violet-50 mb-4">CURB-65 Inputs</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="rounded-lg border border-violet-300/20 bg-black/20 p-3">
+                <p className="text-xs text-violet-200/70">Age</p>
+                <p className="text-base font-semibold text-violet-50">{curb65Data.age ?? 'Not specified'} years</p>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-lg font-bold">
-                  CURB-65 Score: <span className="text-medical-blue dark:text-blue-400">{severityResult.curb65Score}/5</span>
-                </p>
+              <div className="rounded-lg border border-violet-300/20 bg-black/20 p-3">
+                <p className="text-xs text-violet-200/70">Respiratory Rate</p>
+                <p className="text-base font-semibold text-violet-50">{curb65Data.respiratoryRate ?? 'Not specified'} breaths/min</p>
               </div>
-              <div className="mt-3 space-y-1">
-                <p className="text-sm font-semibold">Component Breakdown:</p>
-                {curb65Breakdown.map((item, idx) => (
-                  <p key={idx} className="text-sm text-gray-700 dark:text-gray-300">
-                    • {item.label}: {item.points} point(s) - {item.description}
-                  </p>
-                ))}
+              <div className="rounded-lg border border-violet-300/20 bg-black/20 p-3">
+                <p className="text-xs text-violet-200/70">Blood Pressure</p>
+                <p className="text-base font-semibold text-violet-50">{curb65Data.systolicBP ?? 'N/A'}/{curb65Data.diastolicBP ?? 'N/A'} mmHg</p>
+              </div>
+              <div className="rounded-lg border border-violet-300/20 bg-black/20 p-3">
+                <p className="text-xs text-violet-200/70">Confusion</p>
+                <p className="text-base font-semibold text-violet-50">{curb65Data.confusion ? 'Present' : 'Absent'}</p>
+              </div>
+              <div className="rounded-lg border border-violet-300/20 bg-black/20 p-3">
+                <p className="text-xs text-violet-200/70">Urea Level</p>
+                <p className="text-base font-semibold text-violet-50">{curb65Data.urea ?? 'Not specified'} mmol/L</p>
               </div>
             </div>
           </section>
 
-          {/* Severity Assessment */}
-          <section>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
-              Clinical Severity Assessment
-            </h3>
-            <div className="bg-gradient-to-r from-medical-blue-light to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-6 border-2 border-medical-blue dark:border-blue-700">
-              <div className="text-center mb-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Final Severity Score</p>
-                <p className="text-6xl font-bold text-medical-blue dark:text-blue-400">
-                  {severityResult.finalSeverity}/10
-                </p>
-              </div>
-              <div className="mt-4 space-y-2">
-                <p className="font-semibold text-lg">{severityResult.interpretation}</p>
-                <p className="text-gray-700 dark:text-gray-300">{severityResult.recommendation}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  Risk Level: <strong>{severityResult.riskLevel.toUpperCase()}</strong>
-                </p>
-              </div>
+          <section className="rounded-xl border border-violet-300/20 bg-[rgba(18,13,32,0.74)] p-5">
+            <h3 className="text-lg font-bold text-violet-50 mb-4">CURB-65 Component Breakdown</h3>
+            <div className="space-y-2">
+              {curb65Breakdown.map((item, idx) => (
+                <div key={idx} className="rounded-lg border border-violet-300/15 bg-black/20 p-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-violet-50">{item.label}</p>
+                    <p className="text-sm text-violet-200/75">{item.description}</p>
+                  </div>
+                  <span className="shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold border border-violet-300/30 bg-violet-300/15 text-violet-100">
+                    {item.points} pt{item.points === 1 ? '' : 's'}
+                  </span>
+                </div>
+              ))}
             </div>
           </section>
 
-          {/* Footer */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-            <p>This report is generated for clinical decision support purposes.</p>
-            <p>Always correlate with clinical findings and professional judgment.</p>
+          <section className="rounded-xl border border-violet-300/20 bg-[linear-gradient(135deg,rgba(23,18,43,0.86),rgba(14,10,26,0.9))] p-5">
+            <h3 className="text-lg font-bold text-violet-50 mb-3">Clinical Interpretation</h3>
+            <p className="text-base font-semibold text-violet-100 mb-2">{severityResult.interpretation}</p>
+            <p className="text-sm text-violet-100/80 leading-relaxed">{severityResult.recommendation}</p>
+          </section>
+
+          <div className="border-t border-violet-300/20 pt-4 text-center text-sm text-violet-200/70">
+            <p>This report supports clinical decision-making and must be interpreted with physician judgment.</p>
+            <p>
+              Generated: {new Date().toLocaleString()}
+            </p>
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-6 flex gap-4 justify-end print:hidden">
+        <div className="sticky bottom-0 z-10 border-t border-violet-300/20 bg-[linear-gradient(180deg,rgba(16,12,29,0.95),rgba(12,9,21,0.98))] px-6 py-4 flex flex-wrap gap-3 justify-end print:hidden">
           <button
             onClick={handleDownload}
-            className="medical-button-secondary"
+            className="analysis-action-secondary"
           >
-            📥 Download as Text
+            Download .txt
           </button>
           <button
             onClick={handlePrint}
-            className="medical-button-primary"
+            className="analysis-action-primary"
           >
-            🖨️ Print Report
+            Print Report
           </button>
           <button
             onClick={onClose}
-            className="medical-button-secondary"
+            className="analysis-action-secondary"
           >
             Close
           </button>

@@ -10,6 +10,8 @@ interface ImageUploadProps {
 const ImageUpload = forwardRef<HTMLInputElement, ImageUploadProps>(
   ({ onUpload, imageUrl, loading, error }, ref) => {
     const internalRef = useRef<HTMLInputElement>(null)
+    const iconPath = '/skeleton.png'
+    const hasImage = Boolean(imageUrl)
     
     useImperativeHandle(ref, () => internalRef.current as HTMLInputElement)
 
@@ -36,13 +38,34 @@ const ImageUpload = forwardRef<HTMLInputElement, ImageUploadProps>(
             htmlFor="xray-upload"
             className={`cursor-pointer flex flex-col items-center gap-4 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <div className="text-6xl">🩻</div>
+            <img
+              src={iconPath}
+              alt="Upload icon"
+              className="w-24 h-24 object-contain"
+              onError={(e) => {
+                const target = e.currentTarget
+                target.style.display = 'none'
+                const fallback = target.nextElementSibling as HTMLDivElement | null
+                if (fallback) fallback.style.display = 'block'
+              }}
+            />
+            <div className="text-6xl" style={{ display: 'none' }}>🩻</div>
             <div>
-              <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                {loading ? 'Processing...' : 'Click to upload X-ray image'}
+              <p
+                className={`text-lg ${
+                  hasImage
+                    ? 'font-black uppercase tracking-[0.08em] text-transparent bg-clip-text bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 drop-shadow-[0_0_14px_rgba(147,100,221,0.55)]'
+                    : 'font-semibold text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {loading ? 'Processing...' : hasImage ? 'Image Loaded Successfully' : 'Click to upload X-ray image'}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                JPG, PNG, or JPEG (max 10MB)
+                {loading
+                  ? 'Running AI analysis...'
+                  : hasImage
+                    ? 'Click to replace with another X-ray'
+                    : 'JPG, PNG, or JPEG (max 10MB)'}
               </p>
             </div>
           </label>

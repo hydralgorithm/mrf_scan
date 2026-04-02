@@ -50,12 +50,33 @@ export function calculateCombinedSeverity(
   
   // If NORMAL, return 0
   if (prediction.classification === 'NORMAL') {
+    if (curb65Score >= 2) {
+      const highRiskAbnormal = curb65Score >= 3
+
+      return {
+        finalSeverity: 0,
+        curb65Score,
+        interpretation: highRiskAbnormal
+          ? 'No pneumonia on X-ray, but clinical condition is significantly abnormal'
+          : 'No pneumonia on X-ray, but clinical condition is abnormal',
+        recommendation: highRiskAbnormal
+          ? 'Despite a normal chest X-ray, CURB-65 findings indicate high clinical risk. Arrange urgent physician review and evaluate for non-pneumonia causes or early disease not visible on imaging.'
+          : 'Chest X-ray appears normal, but CURB-65 findings are not reassuring. Recommend prompt clinical reassessment and consultation with a physician for further workup.',
+        riskLevel: highRiskAbnormal ? 'high' : 'moderate',
+        advisoryOnly: true,
+        advisoryTitle: highRiskAbnormal ? 'Clinical Red Flag' : 'Clinical Caution'
+      }
+    }
+
     return {
       finalSeverity: 0,
       curb65Score,
-      interpretation: '✓ NORMAL - No pneumonia detected',
-      recommendation: 'No further action required. Patient shows no signs of pneumonia.',
-      riskLevel: 'low'
+      interpretation: 'No pneumonia detected and no major clinical concern on CURB-65.',
+      recommendation: 'If symptoms persist, consult another physician for follow-up.',
+      riskLevel: 'low',
+      advisoryOnly: false,
+      reassuranceOnly: true,
+      advisoryTitle: 'Reassuring Findings'
     }
   }
   
@@ -104,7 +125,9 @@ export function calculateCombinedSeverity(
     curb65Score,
     interpretation,
     recommendation,
-    riskLevel
+    riskLevel,
+    advisoryOnly: false,
+    reassuranceOnly: false
   }
 }
 

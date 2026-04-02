@@ -4,13 +4,33 @@ interface CURB65FormProps {
   data: CURB65Data
   onChange: (field: keyof CURB65Data, value: any) => void
   score: number
+  showScore?: boolean
 }
 
-export default function CURB65Form({ data, onChange, score }: CURB65FormProps) {
+export default function CURB65Form({ data, onChange, score, showScore = false }: CURB65FormProps) {
   const getRiskLevel = () => {
-    if (score <= 1) return { level: 'Low', color: 'badge-green', bgColor: 'bg-green-50 dark:bg-green-900/20' }
-    if (score === 2) return { level: 'Moderate', color: 'badge-yellow', bgColor: 'bg-yellow-50 dark:bg-yellow-900/20' }
-    return { level: 'High', color: 'badge-red', bgColor: 'bg-red-50 dark:bg-red-900/20' }
+    if (score <= 1) {
+      return {
+        level: 'Low',
+        panelClass: 'risk-score-panel risk-score-low',
+        chipClass: 'risk-chip risk-chip-low',
+        icon: '🟢'
+      }
+    }
+    if (score === 2) {
+      return {
+        level: 'Moderate',
+        panelClass: 'risk-score-panel risk-score-moderate',
+        chipClass: 'risk-chip risk-chip-moderate',
+        icon: '🟠'
+      }
+    }
+    return {
+      level: 'High',
+      panelClass: 'risk-score-panel risk-score-high',
+      chipClass: 'risk-chip risk-chip-high',
+      icon: '🔴'
+    }
   }
 
   const risk = getRiskLevel()
@@ -18,23 +38,21 @@ export default function CURB65Form({ data, onChange, score }: CURB65FormProps) {
   return (
     <div className="space-y-6">
       {/* CURB-65 Score Display */}
-      <div className={`${risk.bgColor} rounded-lg p-4 border-2 ${
-        score <= 1 ? 'border-green-200 dark:border-green-800' :
-        score === 2 ? 'border-yellow-200 dark:border-yellow-800' :
-        'border-red-200 dark:border-red-800'
-      }`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">CURB-65 Score</p>
-            <p className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-              {score}/5
-            </p>
+      {showScore && (
+        <div className={risk.panelClass}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-white/70 mb-2">CURB-65 Score</p>
+              <p className="text-5xl font-black tracking-tight text-white drop-shadow-[0_3px_14px_rgba(0,0,0,0.45)]">
+                {score}/5
+              </p>
+            </div>
+            <span className={risk.chipClass}>
+              <span>{risk.icon}</span> {risk.level} Risk
+            </span>
           </div>
-          <span className={risk.color}>
-            {risk.level} Risk
-          </span>
         </div>
-      </div>
+      )}
 
       {/* Form Fields */}
       <div className="space-y-4">

@@ -77,19 +77,19 @@ export default function TriageQueue() {
       {/* Statistics Dashboard */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in">
         <div className="glass-card p-4 hover:scale-105 transition-transform duration-300">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Patients</div>
+          <div className="text-sm text-[var(--text-muted)] mb-1">Total Patients</div>
           <div className="text-3xl font-bold text-medical-blue dark:text-blue-400">{stats.total}</div>
         </div>
         <div className="glass-card p-4 hover:scale-105 transition-transform duration-300">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Waiting</div>
+          <div className="text-sm text-[var(--text-muted)] mb-1">Waiting</div>
           <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats.waiting}</div>
         </div>
         <div className="glass-card p-4 hover:scale-105 transition-transform duration-300">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">In Treatment</div>
+          <div className="text-sm text-[var(--text-muted)] mb-1">In Treatment</div>
           <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats.inTreatment}</div>
         </div>
         <div className="glass-card p-4 hover:scale-105 transition-transform duration-300">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Avg Wait</div>
+          <div className="text-sm text-[var(--text-muted)] mb-1">Avg Wait</div>
           <div className="text-3xl font-bold text-gray-700 dark:text-gray-300">{stats.avgWaitTime}m</div>
         </div>
       </div>
@@ -120,7 +120,7 @@ export default function TriageQueue() {
         </h2>
         <button
           onClick={handleClearQueue}
-          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors duration-200 text-sm font-medium"
+          className="medical-button-danger text-sm"
         >
           🗑️ Clear Queue
         </button>
@@ -191,7 +191,7 @@ export default function TriageQueue() {
                         e.stopPropagation()
                         handleStatusChange(patient.id, 'in-treatment')
                       }}
-                      className="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white rounded text-sm font-medium transition-colors duration-200"
+                      className="medical-button-secondary text-sm px-3 py-1"
                     >
                       Start Treatment
                     </button>
@@ -202,7 +202,7 @@ export default function TriageQueue() {
                         e.stopPropagation()
                         handleStatusChange(patient.id, 'completed')
                       }}
-                      className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-sm font-medium transition-colors duration-200"
+                      className="medical-button-success text-sm px-3 py-1"
                     >
                       Complete
                     </button>
@@ -212,7 +212,7 @@ export default function TriageQueue() {
                       e.stopPropagation()
                       handleRemovePatient(patient.id)
                     }}
-                    className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-medium transition-colors duration-200"
+                    className="medical-button-danger text-sm px-3 py-1"
                   >
                     Remove
                   </button>
