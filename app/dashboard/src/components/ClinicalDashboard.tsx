@@ -5,6 +5,7 @@ import { calculateCURB65, calculateCombinedSeverity, getCURB65Breakdown } from '
 import { TriageService } from '../services/triageService'
 import MainDashboardPage from '../pages/MainDashboardPage'
 import TriageModePage from '../pages/TriageModePage'
+import { CartoonButton } from './ui/cartoon-button'
 
 export default function ClinicalDashboard() {
   const [triageMode, setTriageMode] = useState(false)
@@ -133,29 +134,26 @@ export default function ClinicalDashboard() {
         
         {/* Mode Toggle */}
         <div className="flex items-center gap-3 pt-4 border-t" style={{ borderColor: 'var(--border-soft)' }}>
-          <button
+          <CartoonButton
+            label="Analysis Mode"
             onClick={() => setTriageMode(false)}
-            className={`medical-button ${
+            hasHighlight={!triageMode}
+            color={
               !triageMode
-                ? 'medical-button-primary scale-[1.03]'
-                : 'medical-button-ghost'
-            }`}
-          >
-            <span>Analysis Mode</span>
-          </button>
-          <button
+                ? 'bg-[linear-gradient(135deg,#b89cff,#8b5cf6)]'
+                : 'bg-[linear-gradient(135deg,rgba(37,24,61,0.95),rgba(21,14,37,0.95))]'
+            }
+          />
+          <CartoonButton
+            label={`Triage Mode  ${TriageService.getStatistics().waiting}`}
             onClick={() => setTriageMode(true)}
-            className={`medical-button ${
+            hasHighlight={triageMode}
+            color={
               triageMode
-                ? 'medical-button-primary scale-[1.03]'
-                : 'medical-button-ghost'
-            }`}
-          >
-            <span>Triage Mode</span>
-            <span className="bg-black/20 px-2 py-0.5 rounded-full text-xs">
-              {TriageService.getStatistics().waiting}
-            </span>
-          </button>
+                ? 'bg-[linear-gradient(135deg,#a882ff,#7c3aed)]'
+                : 'bg-[linear-gradient(135deg,rgba(37,24,61,0.95),rgba(21,14,37,0.95))]'
+            }
+          />
         </div>
       </header>
 
