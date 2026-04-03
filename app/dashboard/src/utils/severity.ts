@@ -10,10 +10,14 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
-function mapCurbToSeverity(curb65Score: number): number {
-  if (curb65Score <= 1) return 2
-  if (curb65Score === 2) return 5
-  return 8
+function getModelContributionOutOfFive(prediction: PredictionResult): number {
+  // Requested behavior: do not let model confidence dominate triage.
+  // Use a fixed default contribution whenever pneumonia is detected.
+  if (prediction.classification === 'NORMAL') {
+    return 0
+  }
+
+  return 1
 }
 
 export function calculateCURB65(data: CURB65Data): number {
@@ -23,6 +27,7 @@ export function calculateCURB65(data: CURB65Data): number {
   const systolicBP = toNumberOrNull(data.systolicBP)
   const diastolicBP = toNumberOrNull(data.diastolicBP)
   const urea = toNumberOrNull(data.urea)
+  const ureaUnit = data.ureaUnit ?? 'mmol/L'
   
   // Age >= 65
   if (age !== null && age >= 65) {
@@ -48,7 +53,11 @@ export function calculateCURB65(data: CURB65Data): number {
   }
   
   // Urea > 7 mmol/L
-  if (urea !== null && urea > 7) {
+  const hasHighUrea = urea !== null && (
+    (ureaUnit === 'mmol/L' && urea > 7) ||
+    (ureaUnit === 'mg/dL' && urea > 19)
+  )
+  if (hasHighUrea) {
     score += 1
   }
   
@@ -101,15 +110,42 @@ export function calculateCombinedSeverity(
     }
   }
   
-  // Blend CURB-65 severity with model-derived base severity to avoid brittle outcomes
-  // when classification confidence shifts after model/profile updates.
-  const curbSeverity = mapCurbToSeverity(curb65Score)
-  const modelSeverity = clamp(toNumberOrNull(prediction.base_severity) ?? curbSeverity, 0, 10)
-  let finalSeverity = Math.round((0.45 * curbSeverity) + (0.55 * modelSeverity))
+  // CURB-65 anchored hybrid:
+  // - CURB-65 contributes 0..5 (primary clinical anchor)
+  // - Model contributes 0..5 (bounded imaging support)
+  // - Final score uses additive base + clinical guardrails aligned to CURB dispositions.
+  const curbContribution = clamp(curb65Score, 0, 5)
+  const modelContribution = getModelContributionOutOfFive(prediction)
+  let finalSeverity = clamp(curbContribution + modelContribution, 1, 10)
+  const guardrailsApplied: string[] = []
 
-  // Add +1 for bacterial pneumonia (higher clinical risk profile).
-  if (prediction.classification === 'BACTERIAL_PNEUMONIA') {
-    finalSeverity += 1
+  // Guardrails aligned with CURB-65 dispositions:
+  // CURB 0-1: generally lower mortality bucket; avoid emergency scores from model alone.
+  if (curbContribution <= 1) {
+    finalSeverity = Math.min(finalSeverity, 6)
+    guardrailsApplied.push('CURB 0-1 cap: final score <= 6')
+  }
+
+  // CURB 2: inpatient/observation bucket; should not look trivially low.
+  if (curbContribution === 2) {
+    finalSeverity = Math.max(finalSeverity, 4)
+    guardrailsApplied.push('CURB 2 floor: final score >= 4')
+  }
+
+  // CURB 3+: severe clinical risk; enforce higher floor.
+  if (curbContribution >= 3) {
+    finalSeverity = Math.max(finalSeverity, 7)
+    guardrailsApplied.push('CURB >=3 floor: final score >= 7')
+  }
+
+  if (curbContribution >= 4) {
+    finalSeverity = Math.max(finalSeverity, 8)
+    guardrailsApplied.push('CURB >=4 floor: final score >= 8')
+  }
+
+  if (curbContribution === 5) {
+    finalSeverity = Math.max(finalSeverity, 9)
+    guardrailsApplied.push('CURB 5 floor: final score >= 9')
   }
 
   finalSeverity = clamp(finalSeverity, 1, 10)
@@ -131,12 +167,16 @@ export function calculateCombinedSeverity(
     riskLevel = 'moderate'
     interpretation = '⚠️ MODERATE SEVERITY - Hospital admission recommended'
     recommendation = 'Hospital admission is recommended for close monitoring and treatment. Consider IV antibiotics if bacterial.'
-  } else { // 7-10
+  } else if (finalSeverity <= 8) {
     riskLevel = 'high'
-    interpretation = '🚨 HIGH SEVERITY - ICU consideration recommended'
-    recommendation = 'Immediate hospital admission and ICU consideration. High risk of complications. Initiate aggressive treatment protocol.'
+    interpretation = '🚨 SEVERE RISK - Urgent admission and escalation required'
+    recommendation = 'Urgent inpatient admission is recommended. Escalate monitoring and prepare for rapid deterioration management.'
+  } else {
+    riskLevel = 'high'
+    interpretation = '🛑 EMERGENCY RISK - ICU-level evaluation immediately'
+    recommendation = 'Immediate emergency escalation. Arrange ICU-level evaluation and sepsis-focused assessment without delay.'
   }
-  
+
   return {
     finalSeverity,
     curb65Score,
@@ -175,10 +215,12 @@ export function getCURB65Breakdown(data: CURB65Data): Array<{ label: string; poi
       description: data.confusion ? 'Acute confusion present' : 'No acute confusion'
     },
     {
-      label: 'Urea >7 mmol/L',
-      points: (data.urea !== null && data.urea > 7) ? 1 : 0,
+      label: data.ureaUnit === 'mg/dL' ? 'BUN >19 mg/dL' : 'Urea >7 mmol/L',
+      points: (data.urea !== null && ((data.ureaUnit === 'mg/dL' && data.urea > 19) || ((data.ureaUnit ?? 'mmol/L') === 'mmol/L' && data.urea > 7))) ? 1 : 0,
       description: data.urea !== null 
-        ? (data.urea > 7 ? `Urea level elevated (${data.urea} mmol/L)` : `Urea level normal (${data.urea} mmol/L)`)
+        ? (((data.ureaUnit === 'mg/dL' && data.urea > 19) || ((data.ureaUnit ?? 'mmol/L') === 'mmol/L' && data.urea > 7))
+          ? `${data.ureaUnit === 'mg/dL' ? 'BUN' : 'Urea'} level elevated (${data.urea} ${data.ureaUnit})`
+          : `${data.ureaUnit === 'mg/dL' ? 'BUN' : 'Urea'} level normal (${data.urea} ${data.ureaUnit})`)
         : 'Urea level not specified'
     }
   ]

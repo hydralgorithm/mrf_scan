@@ -88,7 +88,7 @@ export default function CURB65Form({ data, onChange, score, showScore = false }:
             value={data.respiratoryRate ?? ''}
             onChange={(e) => onChange('respiratoryRate', e.target.value ? parseInt(e.target.value) : null)}
             className="input-field"
-            placeholder="Normal: 12-20 breaths/min"
+            placeholder="CURB point if >= 30"
           />
         </div>
 
@@ -108,7 +108,7 @@ export default function CURB65Form({ data, onChange, score, showScore = false }:
                 value={data.systolicBP ?? ''}
                 onChange={(e) => onChange('systolicBP', e.target.value ? parseInt(e.target.value) : null)}
                 className="input-field"
-                placeholder="Normal: 120"
+                placeholder="CURB point if < 90"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Systolic</p>
             </div>
@@ -120,7 +120,7 @@ export default function CURB65Form({ data, onChange, score, showScore = false }:
                 value={data.diastolicBP ?? ''}
                 onChange={(e) => onChange('diastolicBP', e.target.value ? parseInt(e.target.value) : null)}
                 className="input-field"
-                placeholder="Normal: 80"
+                placeholder="CURB point if <= 60"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Diastolic</p>
             </div>
@@ -160,13 +160,14 @@ export default function CURB65Form({ data, onChange, score, showScore = false }:
           </div>
         </div>
 
-        {/* Urea */}
+        {/* Urea / BUN */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             <span className="inline-flex items-center gap-2">
-              🧪 Urea Level (mmol/L) <span className="text-xs text-gray-500">(Optional)</span>
+              🧪 Urea / BUN <span className="text-xs text-gray-500">(Optional)</span>
             </span>
           </label>
+          <div className="grid grid-cols-[1fr_auto] gap-3 items-start">
           <input
             type="number"
             min="0"
@@ -174,8 +175,18 @@ export default function CURB65Form({ data, onChange, score, showScore = false }:
             value={data.urea ?? ''}
             onChange={(e) => onChange('urea', e.target.value ? parseFloat(e.target.value) : null)}
             className="input-field"
-            placeholder="Normal: 2.5-6.7 mmol/L"
+            placeholder={data.ureaUnit === 'mg/dL' ? 'CURB point if > 19 mg/dL' : 'CURB point if > 7 mmol/L'}
           />
+          <select
+            value={data.ureaUnit}
+            onChange={(e) => onChange('ureaUnit', e.target.value as 'mmol/L' | 'mg/dL')}
+            className="input-field min-w-[110px]"
+          >
+            <option value="mmol/L">mmol/L</option>
+            <option value="mg/dL">mg/dL</option>
+          </select>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Use mmol/L for Urea or mg/dL for BUN.</p>
         </div>
       </div>
     </div>

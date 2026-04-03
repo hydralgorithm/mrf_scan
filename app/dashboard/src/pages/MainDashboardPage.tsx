@@ -6,6 +6,7 @@ import CURB65Form from '../components/CURB65Form'
 import SeverityDisplay from '../components/SeverityDisplay'
 import RiskBreakdown from '../components/RiskBreakdown'
 import ClinicalReport from '../components/ClinicalReport'
+import GradCAMOverlayPanel from '../components/GradCAMOverlayPanel'
 import Dither from '../components/Dither'
 import MagicBentoPanel from '../components/MagicBentoPanel'
 import BorderGlow from '../components/BorderGlow.jsx'
@@ -29,6 +30,9 @@ interface MainDashboardPageProps {
   showReport: boolean
   onCloseReport: () => void
   onUpload: (file: File) => void
+  gradcamOverlayUrl: string | null
+  gradcamError: string | null
+  curbValidationError: string | null
 }
 
 export default function MainDashboardPage({
@@ -48,7 +52,10 @@ export default function MainDashboardPage({
   onReset,
   showReport,
   onCloseReport,
-  onUpload
+  onUpload,
+  gradcamOverlayUrl,
+  gradcamError,
+  curbValidationError
 }: MainDashboardPageProps) {
   return (
     <>
@@ -98,6 +105,13 @@ export default function MainDashboardPage({
             />
 
             {prediction && <XRayResults prediction={prediction} />}
+
+            <GradCAMOverlayPanel
+              heatmapUrl={gradcamOverlayUrl}
+              loading={loading}
+              error={gradcamError}
+              hasUploadedImage={Boolean(imageUrl)}
+            />
           </MagicBentoPanel>
         </div>
 
@@ -128,25 +142,45 @@ export default function MainDashboardPage({
             />
 
             {prediction && !scoreCalculated && (
-              <BorderGlow
-                edgeSensitivity={30}
-                glowColor="40 80 80"
-                backgroundColor="#311858"
-                borderRadius={18}
-                glowRadius={24}
-                glowIntensity={1}
-                coneSpread={25}
-                animated={false}
-                colors={['#c084fc', '#f472b6', '#38bdf8']}
-                className="w-full mt-6"
-              >
-                <button
-                  onClick={onCalculateScore}
-                  className="w-full py-4 px-4 text-lg font-semibold tracking-wide text-violet-50 bg-transparent border-0 outline-none transition-all duration-200 hover:text-white"
+              <div className="mt-6 space-y-3">
+                <BorderGlow
+                  edgeSensitivity={30}
+                  glowColor="40 80 80"
+                  backgroundColor="#311858"
+                  borderRadius={18}
+                  glowRadius={24}
+                  glowIntensity={1}
+                  coneSpread={25}
+                  animated={false}
+                  colors={['#c084fc', '#f472b6', '#38bdf8']}
+                  className="w-full"
                 >
-                  Calculate Severity Score
-                </button>
-              </BorderGlow>
+                  <button
+                    onClick={onCalculateScore}
+                    className="w-full py-4 px-4 text-lg font-semibold tracking-wide text-violet-50 bg-transparent border-0 outline-none transition-all duration-200 hover:text-white"
+                  >
+                    Calculate Severity Score
+                  </button>
+                </BorderGlow>
+
+                {curbValidationError && (
+                  <Alert className="rounded-xl border border-amber-300/55 bg-[linear-gradient(135deg,rgba(67,45,12,0.9),rgba(41,28,8,0.92))] shadow-[0_12px_26px_rgba(44,29,5,0.35)] animate-fade-in px-5 py-4">
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-300/20 border border-amber-200/50 text-amber-100 text-sm">
+                        !
+                      </span>
+                      <div>
+                        <AlertTitle className="text-amber-100 text-base font-bold tracking-wide">
+                          Missing Clinical Inputs
+                        </AlertTitle>
+                        <AlertDescription className="text-amber-100/85 text-sm leading-relaxed">
+                          {curbValidationError}
+                        </AlertDescription>
+                      </div>
+                    </div>
+                  </Alert>
+                )}
+              </div>
             )}
 
             {scoreCalculated && (

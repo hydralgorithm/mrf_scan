@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { predictImage } from '../services/api'
 import { PredictionResult, CURB65Data } from '../types'
 import { calculateCURB65, calculateCombinedSeverity, getCURB65Breakdown } from '../utils/severity'
@@ -13,6 +13,7 @@ export default function ClinicalDashboard() {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [curbValidationError, setCurbValidationError] = useState<string | null>(null)
   const [scoreCalculated, setScoreCalculated] = useState(false)
   
   const [curb65Data, setCURB65Data] = useState<CURB65Data>({
@@ -22,18 +23,32 @@ export default function ClinicalDashboard() {
     diastolicBP: null,
     confusion: false,
     urea: null,
+    ureaUnit: 'mmol/L',
   })
   
   const [showReport, setShowReport] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl)
+      }
+    }
+  }, [imageUrl])
+
   const handleImageUpload = useCallback(async (file: File) => {
     setLoading(true)
     setError(null)
+    setCurbValidationError(null)
     setScoreCalculated(false)
+    setPrediction(null)
     
     try {
       // Create preview URL
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl)
+      }
       const url = URL.createObjectURL(file)
       setImageUrl(url)
       
@@ -48,10 +63,24 @@ export default function ClinicalDashboard() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [imageUrl])
 
   const handleCalculateScore = () => {
     if (!prediction || !imageUrl) return
+
+    const missingRequiredField =
+      curb65Data.age === null ||
+      curb65Data.respiratoryRate === null ||
+      curb65Data.systolicBP === null ||
+      curb65Data.diastolicBP === null
+
+    if (missingRequiredField) {
+      setCurbValidationError('Please fill Age, Respiratory Rate, and both Blood Pressure fields before calculating severity.')
+      setScoreCalculated(false)
+      return
+    }
+
+    setCurbValidationError(null)
     
     // Mark score as calculated to show results
     setScoreCalculated(true)
@@ -81,6 +110,7 @@ export default function ClinicalDashboard() {
 
   const handleCURB65Change = (field: keyof CURB65Data, value: any) => {
     setCURB65Data(prev => ({ ...prev, [field]: value }))
+    setCurbValidationError(null)
     // Reset score when data changes
     setScoreCalculated(false)
   }
@@ -96,6 +126,9 @@ export default function ClinicalDashboard() {
   const curb65Breakdown = getCURB65Breakdown(curb65Data)
 
   const handleReset = () => {
+    if (imageUrl) {
+      URL.revokeObjectURL(imageUrl)
+    }
     setPrediction(null)
     setImageUrl(null)
     setCURB65Data({
@@ -105,8 +138,10 @@ export default function ClinicalDashboard() {
       diastolicBP: null,
       confusion: false,
       urea: null,
+      ureaUnit: 'mmol/L',
     })
     setError(null)
+    setCurbValidationError(null)
     setScoreCalculated(false)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -179,6 +214,9 @@ export default function ClinicalDashboard() {
           showReport={showReport}
           onCloseReport={() => setShowReport(false)}
           onUpload={handleImageUpload}
+          gradcamOverlayUrl={prediction?.gradcam_overlay ?? null}
+          gradcamError={prediction?.gradcam_error ?? null}
+          curbValidationError={curbValidationError}
         />
       )}
     </div>

@@ -21,6 +21,8 @@ export interface PredictionResult {
   thresholded?: boolean
   smart_thresholding_applied?: boolean
   pneumonia_min_confidence?: number
+  gradcam_overlay?: string | null
+  gradcam_error?: string | null
 }
 
 export interface CURB65Data {
@@ -30,6 +32,7 @@ export interface CURB65Data {
   diastolicBP: number | null
   confusion: boolean
   urea: number | null
+  ureaUnit: 'mmol/L' | 'mg/dL'
 }
 
 export interface SeverityResult {

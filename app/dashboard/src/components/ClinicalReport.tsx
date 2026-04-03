@@ -60,7 +60,7 @@ Age: ${curb65Data.age ?? 'Not specified'} years
 Respiratory Rate: ${curb65Data.respiratoryRate ?? 'Not specified'} breaths/min
 Blood Pressure: ${curb65Data.systolicBP ?? 'N/A'}/${curb65Data.diastolicBP ?? 'N/A'} mmHg
 Confusion: ${curb65Data.confusion ? 'Yes' : 'No'}
-Urea Level: ${curb65Data.urea ?? 'Not specified'} mmol/L
+Urea Level: ${curb65Data.urea ?? 'Not specified'} ${curb65Data.ureaUnit}
 
 CURB-65 Score: ${severityResult.curb65Score}/5
 
@@ -231,7 +231,7 @@ END OF REPORT
               </div>
               <div className="rounded-lg border border-violet-300/20 bg-black/20 p-3">
                 <p className="text-xs text-violet-200/70">Urea Level</p>
-                <p className="text-base font-semibold text-violet-50">{curb65Data.urea ?? 'Not specified'} mmol/L</p>
+                <p className="text-base font-semibold text-violet-50">{curb65Data.urea ?? 'Not specified'} {curb65Data.ureaUnit}</p>
               </div>
             </div>
           </section>
