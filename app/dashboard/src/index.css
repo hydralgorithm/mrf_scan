@@ -111,6 +111,59 @@
     @apply backdrop-blur-lg rounded-2xl;
   }
 
+  .triage-metric-card {
+    @apply rounded-2xl p-5;
+    background: linear-gradient(170deg, rgba(28, 20, 49, 0.95), rgba(14, 10, 26, 0.94));
+    border: 1px solid rgba(152, 114, 223, 0.34);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 14px 28px rgba(7, 4, 16, 0.52);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  }
+
+  .triage-metric-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(176, 141, 240, 0.54);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 34px rgba(13, 8, 25, 0.62);
+  }
+
+  .triage-metric-label {
+    color: #b7abd3;
+    font-size: 0.8rem;
+    font-weight: 560;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .triage-metric-value {
+    margin-top: 0.45rem;
+    font-family: 'Geist Variable', 'Segoe UI Variable Text', 'Segoe UI', sans-serif;
+    font-size: clamp(2rem, 3.3vw, 2.5rem);
+    line-height: 1;
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    text-rendering: geometricPrecision;
+  }
+
+  .triage-metric-total .triage-metric-value {
+    color: #82bcff;
+    text-shadow: 0 0 16px rgba(130, 188, 255, 0.2);
+  }
+
+  .triage-metric-waiting .triage-metric-value {
+    color: #ffde7c;
+    text-shadow: 0 0 16px rgba(255, 222, 124, 0.22);
+  }
+
+  .triage-metric-treatment .triage-metric-value {
+    color: #c8b6ff;
+    text-shadow: 0 0 16px rgba(200, 182, 255, 0.2);
+  }
+
+  .triage-metric-avg .triage-metric-value {
+    color: #ece5ff;
+    text-shadow: 0 0 14px rgba(236, 229, 255, 0.17);
+  }
+
   .medical-button {
     @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold tracking-wide transition-all duration-200 active:scale-95;
     border: 1px solid transparent;

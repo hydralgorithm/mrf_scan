@@ -41,26 +41,26 @@ export default function TriageQueue() {
   }
 
   const getSeverityColor = (severity: number) => {
-    if (severity === 0) return 'from-green-500 to-green-600'
-    if (severity <= 3) return 'from-yellow-500 to-yellow-600'
-    if (severity <= 6) return 'from-orange-500 to-orange-600'
-    return 'from-red-500 to-red-600'
+    if (severity === 0) return 'from-[#2f7d62] to-[#245c49]'
+    if (severity <= 3) return 'from-[#b88a2f] to-[#8f6a23]'
+    if (severity <= 6) return 'from-[#b96d2f] to-[#8f5422]'
+    return 'from-[#a44347] to-[#7b3235]'
   }
 
   const getSeverityBadge = (riskLevel: string) => {
     const colors = {
-      low: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-      moderate: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-      high: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+      low: 'bg-emerald-900/35 text-emerald-200 border border-emerald-500/35',
+      moderate: 'bg-amber-900/35 text-amber-200 border border-amber-500/35',
+      high: 'bg-rose-900/35 text-rose-200 border border-rose-500/35'
     }
     return colors[riskLevel as keyof typeof colors] || colors.low
   }
 
   const getStatusColor = (status: string) => {
     const colors = {
-      waiting: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-      'in-treatment': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-      completed: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+      waiting: 'bg-sky-900/35 text-sky-200 border border-sky-500/35',
+      'in-treatment': 'bg-violet-900/35 text-violet-200 border border-violet-500/35',
+      completed: 'bg-slate-800/55 text-slate-200 border border-slate-500/35'
     }
     return colors[status as keyof typeof colors] || colors.waiting
   }
@@ -76,21 +76,21 @@ export default function TriageQueue() {
     <div className="space-y-6">
       {/* Statistics Dashboard */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in">
-        <div className="glass-card p-4 hover:scale-105 transition-transform duration-300">
-          <div className="text-sm text-[var(--text-muted)] mb-1">Total Patients</div>
-          <div className="text-3xl font-bold text-medical-blue dark:text-blue-400">{stats.total}</div>
+        <div className="triage-metric-card triage-metric-total">
+          <div className="triage-metric-label">Total Patients</div>
+          <div className="triage-metric-value">{stats.total}</div>
         </div>
-        <div className="glass-card p-4 hover:scale-105 transition-transform duration-300">
-          <div className="text-sm text-[var(--text-muted)] mb-1">Waiting</div>
-          <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats.waiting}</div>
+        <div className="triage-metric-card triage-metric-waiting">
+          <div className="triage-metric-label">Waiting</div>
+          <div className="triage-metric-value">{stats.waiting}</div>
         </div>
-        <div className="glass-card p-4 hover:scale-105 transition-transform duration-300">
-          <div className="text-sm text-[var(--text-muted)] mb-1">In Treatment</div>
-          <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats.inTreatment}</div>
+        <div className="triage-metric-card triage-metric-treatment">
+          <div className="triage-metric-label">In Treatment</div>
+          <div className="triage-metric-value">{stats.inTreatment}</div>
         </div>
-        <div className="glass-card p-4 hover:scale-105 transition-transform duration-300">
-          <div className="text-sm text-[var(--text-muted)] mb-1">Avg Wait</div>
-          <div className="text-3xl font-bold text-gray-700 dark:text-gray-300">{stats.avgWaitTime}m</div>
+        <div className="triage-metric-card triage-metric-avg">
+          <div className="triage-metric-label">Avg Wait</div>
+          <div className="triage-metric-value">{stats.avgWaitTime}m</div>
         </div>
       </div>
 
@@ -99,15 +99,15 @@ export default function TriageQueue() {
         <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">Priority Breakdown</h3>
         <div className="flex gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+            <div className="w-3 h-3 rounded-full bg-[#a44347]"></div>
             <span className="text-sm text-gray-600 dark:text-gray-400">High: {stats.highSeverity}</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+            <div className="w-3 h-3 rounded-full bg-[#b96d2f]"></div>
             <span className="text-sm text-gray-600 dark:text-gray-400">Moderate: {stats.moderateSeverity}</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            <div className="w-3 h-3 rounded-full bg-[#2f7d62]"></div>
             <span className="text-sm text-gray-600 dark:text-gray-400">Low: {stats.lowSeverity}</span>
           </div>
         </div>
