@@ -1,22 +1,43 @@
 import { PredictionResult, CURB65Data, SeverityResult } from '../types'
 
+function toNumberOrNull(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
+
+function mapCurbToSeverity(curb65Score: number): number {
+  if (curb65Score <= 1) return 2
+  if (curb65Score === 2) return 5
+  return 8
+}
+
 export function calculateCURB65(data: CURB65Data): number {
   let score = 0
+  const age = toNumberOrNull(data.age)
+  const respiratoryRate = toNumberOrNull(data.respiratoryRate)
+  const systolicBP = toNumberOrNull(data.systolicBP)
+  const diastolicBP = toNumberOrNull(data.diastolicBP)
+  const urea = toNumberOrNull(data.urea)
   
   // Age >= 65
-  if (data.age !== null && data.age >= 65) {
+  if (age !== null && age >= 65) {
     score += 1
   }
   
   // Respiratory rate >= 30
-  if (data.respiratoryRate !== null && data.respiratoryRate >= 30) {
+  if (respiratoryRate !== null && respiratoryRate >= 30) {
     score += 1
   }
   
   // Low BP: SBP < 90 OR DBP <= 60
   if (
-    (data.systolicBP !== null && data.systolicBP < 90) ||
-    (data.diastolicBP !== null && data.diastolicBP <= 60)
+    (systolicBP !== null && systolicBP < 90) ||
+    (diastolicBP !== null && diastolicBP <= 60)
   ) {
     score += 1
   }
@@ -27,7 +48,7 @@ export function calculateCURB65(data: CURB65Data): number {
   }
   
   // Urea > 7 mmol/L
-  if (data.urea !== null && data.urea > 7) {
+  if (urea !== null && urea > 7) {
     score += 1
   }
   
@@ -80,22 +101,18 @@ export function calculateCombinedSeverity(
     }
   }
   
-  // Map CURB-65 to base severity
-  let baseSeverity: number
-  if (curb65Score <= 1) {
-    baseSeverity = 2
-  } else if (curb65Score === 2) {
-    baseSeverity = 5
-  } else { // 3-5
-    baseSeverity = 8
-  }
-  
-  // Add +1 for bacterial pneumonia (higher risk)
+  // Blend CURB-65 severity with model-derived base severity to avoid brittle outcomes
+  // when classification confidence shifts after model/profile updates.
+  const curbSeverity = mapCurbToSeverity(curb65Score)
+  const modelSeverity = clamp(toNumberOrNull(prediction.base_severity) ?? curbSeverity, 0, 10)
+  let finalSeverity = Math.round((0.45 * curbSeverity) + (0.55 * modelSeverity))
+
+  // Add +1 for bacterial pneumonia (higher clinical risk profile).
   if (prediction.classification === 'BACTERIAL_PNEUMONIA') {
-    baseSeverity = Math.min(baseSeverity + 1, 10)
+    finalSeverity += 1
   }
-  
-  const finalSeverity = Math.min(baseSeverity, 10)
+
+  finalSeverity = clamp(finalSeverity, 1, 10)
   
   // Determine risk level
   let riskLevel: 'low' | 'moderate' | 'high'

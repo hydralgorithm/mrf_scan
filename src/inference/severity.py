@@ -67,16 +67,19 @@ def compute_combined_severity(
     if classification == "NORMAL":
         return 0
     
-    # Map CURB-65 to base severity
+    # Map CURB-65 to a clinical baseline severity.
     if curb65_score <= 1:
-        base_sev = 2
+        curb_sev = 2
     elif curb65_score == 2:
-        base_sev = 5
+        curb_sev = 5
     else:  # 3-5
-        base_sev = 8
-    
+        curb_sev = 8
+
+    model_sev = curb_sev if base_severity is None else int(np.clip(base_severity, 0, 10))
+    final_sev = int(round((0.45 * curb_sev) + (0.55 * model_sev)))
+
     # Add +1 for bacterial pneumonia (higher risk)
     if classification == "BACTERIAL_PNEUMONIA":
-        base_sev = min(base_sev + 1, 10)
-    
-    return min(base_sev, 10)
+        final_sev += 1
+
+    return int(np.clip(final_sev, 1, 10))
