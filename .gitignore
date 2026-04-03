@@ -14,10 +14,15 @@ models/checkpoints/
 *.h5
 *.pb
 *.tflite
+*.keras
+models/final/*.keras
 
 # Data files
 data.zip
 /data/
+/test_data/
+/test_data_mixed_backup/
+/test_data_removed_wrong/
 
 # Data (keep structure, ignore actual data)
 data/raw/**/*.jpg
