@@ -1,339 +1,200 @@
-# 🫁 Pneumonia AI - Medical Imaging Classifier
+# MRF Scan: Pneumonia X-ray Analysis Dashboard
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![React 18](https://img.shields.io/badge/react-18.2.0-blue.svg)](https://reactjs.org/)
-[![TensorFlow 2.17](https://img.shields.io/badge/tensorflow-2.17.0-orange.svg)](https://www.tensorflow.org/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-API-green)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18-blue)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-5-purple)](https://vitejs.dev/)
 
-A production-ready AI-powered medical imaging system for automated pneumonia classification from chest X-rays. Features a modern React dashboard with clinical decision support and patient triage management.
+MRF Scan is an open-source project for chest X-ray classification with a clinical dashboard.
+It combines:
 
-## 🎯 Key Features
+- FastAPI + TensorFlow backend for inference
+- React + TypeScript frontend for analysis and triage workflow
+- GradCAM overlay generation for model explainability
+- CURB-65 based severity support and triage queue UI
 
-### 🔬 AI Classification
-- **Multi-class Detection**: Distinguishes between NORMAL, BACTERIAL PNEUMONIA, and VIRAL PNEUMONIA
-- **Deep Learning Model**: MobileNetV2 architecture with 3.5M parameters
-- **Medical Image Preprocessing**: CLAHE enhancement for improved X-ray contrast
-- **High Accuracy**: Achieves strong performance on pneumonia detection
-- **Real-time Inference**: Predictions in under 1 second
+This repository is intended for research, experimentation, and educational use.
 
-### 🏥 Clinical Dashboard
-- **Real-time Analysis**: Upload X-rays and get instant AI predictions
-- **CURB-65 Scoring**: Automated pneumonia severity assessment (0-10 scale)
-- **Patient Triage**: Priority-based queue system with localStorage persistence
-- **Interactive UI**: Modern theme toggle, responsive design with Tailwind CSS
-- **Medical Context**: Input vital signs (respiratory rate, blood pressure, urea levels)
+## What The App Does
 
-### ⚡ Technical Highlights
-- **Fast API Backend**: RESTful endpoints with automatic documentation
-- **React + TypeScript Frontend**: Type-safe, component-based architecture
-- **Production Ready**: Error handling, CORS support, model versioning
-- **Explainable AI**: GradCAM visualizations for model interpretability
+- Upload a chest X-ray and classify into:
+  - NORMAL
+  - BACTERIAL_PNEUMONIA
+  - VIRAL_PNEUMONIA
+- Return confidence and class probabilities from the model
+- Generate and display a blended GradCAM overlay for each uploaded image
+- Collect CURB-65 inputs and compute a combined severity score
+- Add analyzed cases into a browser-based triage queue
 
----
+## Tech Stack
 
-## 🏗️ Architecture
+### Backend
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      PNEUMONIA AI SYSTEM                        │
-└─────────────────────────────────────────────────────────────────┘
+- Python
+- FastAPI
+- Uvicorn
+- TensorFlow / Keras
+- OpenCV
 
-┌──────────────────┐         ┌──────────────────┐         ┌──────────────────┐
-│                  │         │                  │         │                  │
-│  React Frontend  │────────▶│   FastAPI        │────────▶│   TensorFlow     │
-│  (Port 5173)     │  HTTP   │   Backend        │         │   Model          │
-│                  │◀────────│   (Port 8000)    │◀────────│   (MobileNetV2)  │
-│                  │  JSON   │                  │         │                  │
-└──────────────────┘         └──────────────────┘         └──────────────────┘
-        │                            │                            │
-        │                            │                            │
-        ▼                            ▼                            ▼
-┌──────────────────┐         ┌──────────────────┐         ┌──────────────────┐
-│  - Image Upload  │         │  - CLAHE          │         │  - 224x224 Input │
-│  - Triage Queue  │         │    Preprocessing  │         │  - ImageNet      │
-│  - CURB-65 Form  │         │  - Smart          │         │    Pretrained    │
-│  - Theme Toggle  │         │    Thresholding   │         │  - 3 Classes     │
-│  - Results View  │         │  - CORS Enabled   │         │  - Frozen Base   │
-└──────────────────┘         └──────────────────┘         └──────────────────┘
-```
+### Frontend
 
-### Data Flow
-1. **Upload**: User uploads chest X-ray image
-2. **Preprocessing**: CLAHE enhancement + resize to 224x224
-3. **Inference**: MobileNetV2 model predicts probabilities
-4. **Post-processing**: Smart thresholding adjusts predictions
-5. **Clinical Scoring**: CURB-65 calculation + severity assessment
-6. **Triage**: Auto-add to priority queue sorted by severity
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- Axios
 
----
+## Repository Layout
 
-## 📁 Project Structure
-
-```
+```text
 pneumonia_ai/
-├── app/
-│   ├── dashboard/              # React frontend
-│   │   ├── src/
-│   │   │   ├── components/     # React components
-│   │   │   │   ├── ClinicalDashboard.tsx
-│   │   │   │   ├── CURB65Form.tsx
-│   │   │   │   ├── ImageUpload.tsx
-│   │   │   │   ├── ResultsDisplay.tsx
-│   │   │   │   └── TriageQueue.tsx
-│   │   │   ├── services/       # Business logic
-│   │   │   │   └── triageService.ts
-│   │   │   ├── types/          # TypeScript types
-│   │   │   ├── App.tsx
-│   │   │   └── index.css
-│   │   ├── package.json
-│   │   └── vite.config.ts
-├── src/
-│   ├── api/
-│   │   └── main.py             # FastAPI backend server
-│   ├── data/
-│   │   ├── loader.py           # Dataset loading
-│   │   ├── preprocess.py       # Data preprocessing
-│   │   └── xray_preprocess.py  # CLAHE X-ray enhancement
-│   ├── models/
-│   │   ├── build.py            # Model architecture
-│   │   ├── train.py            # Training pipeline
-│   │   ├── eval.py             # Evaluation
-│   │   └── metrics.py          # Custom metrics
-│   ├── inference/
-│   │   ├── predict.py          # Prediction functions
-│   │   └── severity.py         # CURB-65 scoring
-│   └── explainability/
-│       ├── gradcam.py          # GradCAM implementation
-│       └── overlay.py          # Visualization overlay
-├── models/
-│   └── final/
-│       ├── best_model.keras    # Production model
-│       └── metadata.json       # Model metadata
-├── data/
-│   └── raw/
-│       ├── train/              # Training images
-│       └── test/               # Test images
-├── docs/                       # Documentation
-├── requirements.txt            # Python dependencies
-└── README.md
+  app/dashboard/               # React frontend
+  src/api/main.py             # FastAPI entrypoint
+  src/data/                   # Data loaders and preprocessing
+  src/explainability/         # GradCAM utilities
+  src/inference/              # Inference and severity helpers
+  src/models/                 # Training/eval scripts
+  models/                     # Model files and metadata
+  docs/                       # Additional docs
 ```
 
----
+## Local Setup
 
-## 🚀 Quick Start
+### 1. Clone
 
-### Prerequisites
-- Python 3.8 or higher
-- Node.js 16+ and npm
-- 8GB RAM minimum
-- (Optional) NVIDIA GPU for training
-
-### Installation
-
-#### 1. Clone Repository
 ```bash
 git clone https://github.com/hydralgorithm/mrf_scan.git
 cd mrf_scan
 ```
 
-#### 2. Unzip the Data
-The `data` directory, which contains the dataset, is not tracked by Git. You will find a `data.zip` file in the root of the project. Unzip it in the project's root directory.
+### 2. Python environment
 
-This will create the `data/` directory with the necessary images for the application to run.
-
-#### 3. Backend Setup
 ```bash
-# Create virtual environment
 python -m venv .venv
+```
 
-# Activate virtual environment
-# Windows:
+Windows PowerShell:
+
+```powershell
 .\.venv\Scripts\Activate.ps1
-# Linux/Mac:
-source .venv/bin/activate
+```
 
-# Install dependencies
+Linux/macOS:
+
+```bash
+source .venv/bin/activate
+```
+
+Install backend dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
-#### 4. Frontend Setup
+### 3. Frontend dependencies
+
 ```bash
 cd app/dashboard
 npm install
 cd ../..
 ```
 
-### Running the Application
+### 4. Dataset and model files
 
-**Terminal 1 - Backend API:**
-```bash
-# Activate venv
-.\.venv\Scripts\Activate.ps1  # Windows
-source .venv/bin/activate       # Linux/Mac
+- This repo intentionally does not track full training data in Git.
+- If `data.zip` is present, extract it at repository root.
+- Ensure model artifacts are available under `models/final/`.
 
-# Start FastAPI server
-python -m uvicorn src.api.main:app --reload --port 8000
+## Running The App
+
+Run backend and frontend in separate terminals.
+
+### Terminal A: Backend
+
+```powershell
+Set-Location "C:\path\to\pneumonia_ai"
+.\.venv\Scripts\Activate.ps1
+python src/api/main.py
 ```
 
-**Terminal 2 - Frontend:**
-```bash
-cd app/dashboard
+Alternative backend command:
+
+```powershell
+python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### Terminal B: Frontend
+
+```powershell
+Set-Location "C:\path\to\pneumonia_ai\app\dashboard"
 npm run dev
 ```
 
-**Access the application:**
-- Frontend: http://localhost:5173
-- API Docs: http://localhost:8000/docs
+Open:
 
----
+- Frontend: `http://localhost:5173`
+- API docs: `http://localhost:8000/docs`
+- Health endpoint: `http://localhost:8000/health`
 
-## 💻 Usage Guide
+## API Summary
 
-### 1. Upload X-ray Image
-- Click **"Choose X-ray Image"** button
-- Select chest X-ray (JPEG/PNG)
-- Image preview appears
+### `POST /predict`
 
-### 2. Enter Patient Details (Optional)
-- Respiratory rate (breaths/min)
-- Blood pressure (systolic/diastolic)
-- Blood urea nitrogen (mmol/L)
-- Age and confusion status
+Multipart form upload with key `file`.
 
-### 3. Get Analysis
-- Click **"Calculate Score"** button
-- View AI classification (NORMAL/BACTERIAL/VIRAL)
-- See confidence score and probabilities
-- Review severity score (0-10)
-- Patient auto-added to triage queue
+Returns JSON including:
 
-### 4. Manage Triage Queue
-- View all analyzed patients
-- Sorted by severity (highest first)
-- Click patient to view details
-- Queue persists in browser storage
+- `classification`
+- `confidence`
+- `probabilities`
+- `base_severity`
+- `class_index`
+- `gradcam_overlay` (base64 data URL, when available)
+- `gradcam_error` (null or error message)
 
----
+### `GET /health`
 
-## 🔧 API Reference
+Returns server/model status and active profile info.
 
-### Endpoints
+## Frontend Configuration
 
-#### `POST /predict`
-Analyze chest X-ray image
+The frontend API base URL is controlled via `VITE_API_URL`.
 
-**Request:**
-```bash
-curl -X POST "http://localhost:8000/predict" \
-  -F "file=@chest_xray.jpg"
-```
+- If `VITE_API_URL` is not set, it defaults to `http://localhost:8000`.
+- File reference: [app/dashboard/src/services/api.ts](app/dashboard/src/services/api.ts)
 
-**Response:**
-```json
-{
-  "classification": "BACTERIAL_PNEUMONIA",
-  "confidence": 0.87,
-  "probabilities": {
-    "NORMAL": 0.05,
-    "BACTERIAL_PNEUMONIA": 0.87,
-    "VIRAL_PNEUMONIA": 0.08
-  },
-  "base_severity": 7,
-  "class_index": 1
-}
-```
+## Deploying Frontend To Vercel (While Backend Is Local)
 
-#### `GET /health`
-Check API health status
+If you want to deploy only frontend and keep backend on your PC:
 
-#### `GET /docs`
-Interactive API documentation (Swagger UI)
+1. Run backend locally on port `8000`
+2. Expose backend with a tunnel (for example Cloudflare Tunnel)
+3. Set Vercel environment variable:
+   - `VITE_API_URL=https://your-tunnel-url`
 
----
+Important: if backend or tunnel stops, deployed frontend API requests will fail until restarted.
 
-## 🧪 Model Performance
+## Current Notes / Limitations
 
-### Metrics
-- **Overall Accuracy**: 73.4%
-- **Precision**: 71.8%
-- **Recall**: 78.2%
-- **F1-Score**: 74.9%
-- **Parameters**: 3,538,051 (lightweight and efficient)
+- Triage queue data is stored in browser localStorage (client-side only).
+- CURB-65 support is decision-aid style and not a replacement for clinical judgment.
+- Model and thresholds are under active iteration.
 
-### Classification Performance
-- Strong detection of pneumonia cases
-- Reliable differentiation between bacterial and viral infections
-- Optimized for clinical X-ray images with CLAHE preprocessing
-- Fast inference time (<1 second per image)
+## Contributing
 
-### Model Architecture
-- **Base**: MobileNetV2 (ImageNet pre-trained)
-- **Custom Layers**: Global Average Pooling + Dropout + Dense Classification Head
-- **Input Size**: 224x224 RGB
-- **Output**: 3-class softmax (NORMAL, BACTERIAL, VIRAL)
+Contributions are welcome.
 
----
-
-## 🛠️ Development
-
-### Training New Model
-```bash
-# Activate environment
-source .venv/bin/activate
-
-# Train model
-python -m src.models.train
-```
-
-### Model Evaluation
-```bash
-python -m src.models.eval
-```
-
----
-
-## 📦 Dependencies
-
-### Backend
-- **TensorFlow 2.17.0** - Deep learning framework
-- **FastAPI** - Modern web framework
-- **Uvicorn** - ASGI server
-- **OpenCV** - Image processing
-- **NumPy** - Numerical computing
-- **scikit-learn** - Machine learning utilities
-
-### Frontend
-- **React 18.2.0** - UI library
-- **TypeScript 5.3.0** - Type safety
-- **Vite 5.0.0** - Build tool
-- **Tailwind CSS 3.3.6** - Styling
-- **Lucide React** - Icons
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please:
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+2. Create a feature branch
+3. Make changes with tests/build checks where possible
+4. Open a PR with a clear summary
 
----
+## License
 
-## 📄 License
+No license file is currently included in this repository.
+If you plan to open-source publicly, add a `LICENSE` file (MIT is a common choice).
 
-This project is licensed under the MIT License.
+## Medical Disclaimer
 
----
-
-## 🙏 Acknowledgments
-
-- Dataset: [Chest X-Ray Images (Pneumonia)](https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia)
-- MobileNetV2 Architecture: [Google Research](https://arxiv.org/abs/1801.04381)
-- CURB-65 Score: Clinical pneumonia severity assessment tool
-
----
-
-**⚠️ Medical Disclaimer**: This tool is for research and educational purposes only. It should NOT be used as a substitute for professional medical diagnosis or treatment. Always consult qualified healthcare professionals for medical decisions.
+This project is for research and educational use only.
+It is not a medical device and must not be used as a sole basis for diagnosis or treatment decisions.
